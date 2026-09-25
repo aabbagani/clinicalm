@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CliniCalm — Intake Validation</title>
+<style>
+  :root {
+    --bg: #f4f7f8;
+    --panel: #ffffff;
+    --border: #e1e7ea;
+    --text: #1c2b2f;
+    --text-muted: #5b6b70;
+    --brand: #0f6a63;
+    --brand-dark: #0b4f4a;
+    --brand-tint: #e6f2f0;
+    --pass: #1a7f4b;
+    --pass-bg: #e8f7ee;
+    --flag: #b5461f;
+    --flag-bg: #fdeee7;
+    --resolved: #1c5fa8;
+    --resolved-bg: #e8f0fb;
+    --neutral-text: #5b6b70;
+    --neutral-bg: #eef1f2;
+    --tabs-bg: #eef2f3;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(20, 40, 40, 0.06), 0 4px 14px rgba(20, 40, 40, 0.05);
+  }
+
+  * { box-sizing: border-box; }
+
+  [hidden] { display: none !important; }
+
+  body {
+    margin: 0;
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+  }
+
+  header.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.5px;
+    box-shadow: var(--shadow);
+  }
+
+  .brand-text h1 {
+    font-size: 19px;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+
+  .brand-text p {
+    margin: 2px 0 0;
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+
+  .top-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .btn {
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .btn:hover { background: #f0f3f4; }
+
+  .btn-primary {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: white;
+  }
+
+  .btn-primary:hover { background: var(--brand-dark); }
+
+  .btn-primary:disabled, .btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-muted);
+  }
+
+  .btn-ghost:hover { background: #eef1f2; }
+
+  .btn-sm { padding: 6px 11px; font-size: 12.5px; border-radius: 7px; }
+
+  .view-switch {
+    display: flex;
+    gap: 4px;
+    background: var(--tabs-bg);
+    border-radius: 8px;
+    padding: 3px;
+    width: fit-content;
+    margin-bottom: 22px;
+  }
+
+  .view-switch button {
+    border: none;
+    background: transparent;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    color: var(--text-muted);
+  }
+
+  .view-switch button.active {
+    background: var(--panel);
+    color: var(--text);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  }
+
+  section.summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  @media (max-width: 720px) {
+    section.summary { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+
+  .card .label {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .card .value {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .card .value.flag-color { color: var(--flag); }
+  .card .value.resolved-color { color: var(--resolved); }
+  .card .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .panel-header h2 {
+    font-size: 15px;
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--tabs-bg);
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .tab {
+    border: none;
+    background: transparent;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    border-radius: 6px;
+    color: var(--text-muted);
+  }
+
+  .tab.active {
+    background: var(--panel);
+    color: var(--text);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  }
+
+  .empty-state {
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--text-muted);
+  }
+
+  .empty-state .icon {
+    font-size: 34px;
+    margin-bottom: 10px;
+  }
+
+  .empty-state h3 {
+    color: var(--text);
+    margin: 0 0 6px;
+    font-size: 16px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.2px;
+  }
+
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #fafcfc; }
+
+  .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .badge.pass { background: var(--pass-bg); color: var(--pass); }
+  .badge.flag { background: var(--flag-bg); color: var(--flag); }
+  .badge.resolved { background: var(--resolved-bg); color: var(--resolved); }
+  .badge.neutral { background: var(--neutral-bg); color: var(--neutral-text); }
+
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .issue-text {
+    color: var(--flag);
+    font-size: 12.5px;
+    max-width: 260px;
+    display: block;
+  }
+  .issue-text .rule {
+    display: block;
+    color: var(--text-muted);
+    font-size: 11px;
+    margin-top: 2px;
+  }
+
+  .cell-muted { color: var(--text-muted); }
+
+  .row-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+  footer.note {
+    margin-top: 22px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  .pulse {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #f4b13e;
+    margin-right: 6px;
+    animation: pulse 1.4s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  /* ---------------- How it works ---------------- */
+  .how-section { display: flex; flex-direction: column; gap: 24px; }
+
+  .how-header h2 { font-size: 21px; margin: 0 0 4px; font-weight: 700; }
+  .how-header p { margin: 0; color: var(--text-muted); font-size: 13.5px; }
+
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .pipeline .node {
+    flex: 1;
+    min-width: 150px;
+    text-align: center;
+    padding: 14px 12px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .pipeline .node.gate { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .pipeline .arrow { color: var(--text-muted); font-size: 20px; flex: 0 0 auto; }
+  @media (max-width: 640px) {
+    .pipeline { flex-direction: column; }
+    .pipeline .arrow { transform: rotate(90deg); }
+  }
+
+  .principle-box {
+    background: var(--brand-tint);
+    border: 1px solid var(--brand);
+    border-radius: var(--radius);
+    padding: 22px;
+  }
+  .principle-box blockquote {
+    margin: 0 0 10px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--brand-dark);
+    font-style: italic;
+  }
+  .principle-box p { margin: 0; font-size: 13.5px; color: var(--text); line-height: 1.55; }
+
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 640px) { .compare-grid { grid-template-columns: 1fr; } }
+  .compare-card { border-radius: var(--radius); padding: 18px; border: 1px solid var(--border); }
+  .compare-card.bad { background: var(--flag-bg); border-color: var(--flag); }
+  .compare-card.good { background: var(--pass-bg); border-color: var(--pass); }
+  .compare-card h3 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .compare-card.bad h3 { color: var(--flag); }
+  .compare-card.good h3 { color: var(--pass); }
+  .compare-card p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text); }
+
+  .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 900px) { .steps-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .steps-grid { grid-template-columns: 1fr; } }
+  .step-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--brand); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12.5px; font-weight: 700; margin-bottom: 10px;
+  }
+  .step-card h4 { margin: 0 0 4px; font-size: 13.5px; }
+  .step-card p { margin: 0; font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
+
+  .disclaimer-note {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 14px;
+    background: var(--neutral-bg); border-radius: var(--radius);
+    padding: 14px 16px; font-size: 12px; color: var(--text-muted);
+  }
+  .disclaimer-note p { margin: 0; line-height: 1.55; }
+
+  /* ---------------- Modal ---------------- */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10, 20, 20, 0.45);
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 40px 16px; overflow-y: auto; z-index: 50;
+  }
+  .modal {
+    background: var(--panel); border-radius: var(--radius);
+    max-width: 640px; width: 100%;
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 18px; border-bottom: 1px solid var(--border);
+  }
+  .modal-header h3 { margin: 0; font-size: 15px; }
+  .modal-body { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+  .modal-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 18px; border-top: 1px solid var(--border);
+    background: var(--bg); font-size: 12px; color: var(--text-muted);
+  }
+
+  .raw-payload { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .raw-payload summary {
+    cursor: pointer; padding: 10px 12px; font-size: 13px; font-weight: 600;
+    list-style: none; display: flex; align-items: center; gap: 8px;
+  }
+  .raw-payload summary::-webkit-details-marker { display: none; }
+  .raw-payload pre { margin: 0; padding: 12px; font-size: 11.5px; background: var(--bg); border-top: 1px solid var(--border); overflow-x: auto; }
+
+  .review-panel { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .review-panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .review-panel-head h4 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+  .field-label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 6px; }
+  .required-mark { color: var(--flag); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .field-group { margin-bottom: 14px; }
+  select.form-control, textarea.form-control {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 7px;
+    font-family: inherit; font-size: 13px; background: var(--panel); color: var(--text);
+  }
+  textarea.form-control { resize: vertical; min-height: 60px; }
+  .review-footer-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  .success-banner {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    background: var(--pass-bg); border: 1px solid var(--pass); border-radius: var(--radius); padding: 9px 14px;
+  }
+  .success-banner strong { color: var(--pass); font-size: 12.5px; font-weight: 700; }
+  .pill {
+    background: var(--panel); border: 1px solid var(--pass); color: var(--pass);
+    font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+
+  .audit-trail { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .audit-trail h4 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+  .audit-item { position: relative; padding-left: 18px; padding-bottom: 14px; border-left: 2px solid var(--border); margin-left: 4px; }
+  .audit-item:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .audit-item::before { content: ""; position: absolute; left: -5px; top: 2px; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
+  .audit-item-head { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 600; }
+  .audit-item-time { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .audit-item-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">CC</div>
+        <div class="brand-text">
+          <h1>CliniCalm</h1>
+          <p>Automated intake validation for clinical trial data</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="btn btn-ghost btn-sm" id="resetBtn">Reset demo</button>
+        <button class="btn btn-primary" id="runBtn">Run validation</button>
+      </div>
+    </header>
+
+    <nav class="view-switch" id="viewSwitch">
+      <button class="active" data-view="demo">Live demo</button>
+      <button data-view="how">How it works</button>
+    </nav>
+
+    <section id="demoView">
+      <section class="summary">
+        <div class="card">
+          <div class="label">Total rows</div>
+          <div class="value" id="statTotal">—</div>
+          <div class="sub">in this intake batch</div>
+        </div>
+        <div class="card">
+          <div class="label">Flagged</div>
+          <div class="value flag-color" id="statFlagged">—</div>
+          <div class="sub" id="statFlaggedSub">awaiting review</div>
+        </div>
+        <div class="card">
+          <div class="label">Resolved</div>
+          <div class="value resolved-color" id="statResolved">—</div>
+          <div class="sub" id="statResolvedSub">closed by reviewers</div>
+        </div>
+        <div class="card">
+          <div class="label">Avg. time to resolution</div>
+          <div class="value" id="statAvgTime">—</div>
+          <div class="sub">simulated, for demo pacing</div>
+        </div>
+      </section>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2 id="panelTitle">Intake batch — clinical_intake_2026-01.csv</h2>
+          <div class="tabs" id="tabs">
+            <button class="tab active" data-filter="all">All</button>
+            <button class="tab" data-filter="flagged">Flagged</button>
+            <button class="tab" data-filter="resolved">Resolved</button>
+            <button class="tab" data-filter="passed">Passed</button>
+          </div>
+        </div>
+        <div id="tableWrap"></div>
+      </div>
+
+      <footer class="note">
+        Synthetic demo data only — no real patient records. Validation runs entirely in your browser; nothing leaves this page.
+      </footer>
+    </section>
+
+    <section id="howView" class="how-section" hidden>
+      <div class="how-header">
+        <h2>How CliniCalm works</h2>
+        <p>Intake-quality gate architecture &amp; workflow</p>
+      </div>
+
+      <div class="pipeline">
+        <div class="node">Incoming clinical feeds</div>
+        <div class="arrow">&#8594;</div>
+        <div class="node gate">CliniCalm intake gate</div>
+        <div class="arrow">&#8594;</div>
+        <div class="node">Downstream warehouse / analytics</div>
+      </div>
+
+      <div class="principle-box">
+        <blockquote>“Catch the problem at step one instead of step five.”</blockquote>
+        <p>Incoming data does not automatically become trusted data simply because it was successfully ingested. CliniCalm sits at the front of the clinical data pipeline to prevent flawed data from traveling downstream, where diagnosis errors and corrupted cohort selections become exponentially more costly to untangle.</p>
+      </div>
+
+      <div class="compare-grid">
+        <div class="compare-card bad">
+          <h3>Without intake gate (traditional)</h3>
+          <p>Raw data ingested &#8594; unnoticed errors propagate through transformation, cohort curation, and ML models &#8594; corrupted analyses discovered weeks later, at step 5.</p>
+        </div>
+        <div class="compare-card good">
+          <h3>With CliniCalm gate (at intake)</h3>
+          <p>Raw data ingested &#8594; deterministic schema, domain, and consistency rules run instantly &#8594; flawed records quarantined at step 1, with human-in-the-loop review.</p>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="margin:0 0 12px; font-size:15px;">The 9-step intake validation &amp; review workflow</h3>
+        <div class="steps-grid" id="stepsGrid"></div>
+      </div>
+
+      <div class="disclaimer-note" id="disclaimerNote">
+        <p><strong>Case study note:</strong> CliniCalm is an independent product concept and prototype, built strictly with synthetic clinical data for demonstration purposes. It is not an official Flatiron Health product.</p>
+        <button class="btn btn-sm" id="disclaimerUnderstood">Understood</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-overlay" id="findingModal" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">Finding details</h3>
+        <button class="btn btn-ghost btn-sm" id="modalCloseX">&#10005;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer">
+        <span id="modalFindingId" class="mono"></span>
+        <button class="btn btn-sm" id="modalCloseBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------------
+  // Mock intake dataset. A few rows carry intentional, seeded errors so a
+  // live "Run validation" pass has something real to catch:
+  //  - P007: missing labValue (missing field)
+  //  - P018: missing visitDate (missing field)
+  //  - P005: labValue is a string, not a number (wrong data type)
+  //  - P009, P016: labValue outside the physiologically plausible range
+  //  - P013: siteId column arrived misnamed as "site_ID" (schema mismatch)
+  // ---------------------------------------------------------------------
+  var RAW_ROWS = [
+    { patientId: "P001", visitDate: "2026-01-05", labTest: "Hemoglobin", labValue: 14.2, unit: "g/dL", siteId: "S01" },
+    { patientId: "P002", visitDate: "2026-01-06", labTest: "Glucose",    labValue: 95,   unit: "mg/dL", siteId: "S01" },
+    { patientId: "P003", visitDate: "2026-01-06", labTest: "Potassium", labValue: 4.1,  unit: "mmol/L", siteId: "S02" },
+    { patientId: "P004", visitDate: "2026-01-07", labTest: "Hemoglobin", labValue: 13.8, unit: "g/dL", siteId: "S02" },
+    { patientId: "P005", visitDate: "2026-01-07", labTest: "Glucose",    labValue: "high", unit: "mg/dL", siteId: "S01" },
+    { patientId: "P006", visitDate: "2026-01-08", labTest: "Potassium", labValue: 4.4,  unit: "mmol/L", siteId: "S03" },
+    { patientId: "P007", visitDate: "2026-01-08", labTest: "Hemoglobin", labValue: null, unit: "g/dL", siteId: "S01" },
+    { patientId: "P008", visitDate: "2026-01-09", labTest: "Glucose",    labValue: 110,  unit: "mg/dL", siteId: "S02" },
+    { patientId: "P009", visitDate: "2026-01-09", labTest: "Potassium", labValue: 9.8,  unit: "mmol/L", siteId: "S03" },
+    { patientId: "P010", visitDate: "2026-01-10", labTest: "Hemoglobin", labValue: 15.1, unit: "g/dL", siteId: "S03" },
+    { patientId: "P011", visitDate: "2026-01-10", labTest: "Glucose",    labValue: 88,   unit: "mg/dL", siteId: "S01" },
+    { patientId: "P012", visitDate: "2026-01-11", labTest: "Potassium", labValue: 3.9,  unit: "mmol/L", siteId: "S02" },
+    { patientId: "P013", visitDate: "2026-01-11", labTest: "Hemoglobin", labValue: 12.9, unit: "g/dL", site_ID: "S01" },
+    { patientId: "P014", visitDate: "2026-01-12", labTest: "Glucose",    labValue: 132,  unit: "mg/dL", siteId: "S03" },
+    { patientId: "P015", visitDate: "2026-01-12", labTest: "Potassium", labValue: 4.7,  unit: "mmol/L", siteId: "S01" },
+    { patientId: "P016", visitDate: "2026-01-13", labTest: "Hemoglobin", labValue: 34.5, unit: "g/dL", siteId: "S02" },
+    { patientId: "P017", visitDate: "2026-01-13", labTest: "Glucose",    labValue: 101,  unit: "mg/dL", siteId: "S03" },
+    { patientId: "P018", visitDate: "",            labTest: "Potassium", labValue: 4.0,  unit: "mmol/L", siteId: "S01" }
+  ];
+
+  var REQUIRED_FIELDS = ["patientId", "visitDate", "labTest", "labValue", "unit", "siteId"];
+  var KNOWN_MISNAMES = { site_ID: "siteId", SiteID: "siteId", Site: "siteId", location: "siteId" };
+
+  var REFERENCE_RANGES = {
+    Hemoglobin: { min: 12, max: 17 },
+    Glucose:    { min: 70, max: 140 },
+    Potassium:  { min: 3.5, max: 5.1 }
+  };
+
+  var REVIEWERS = [
+    "Dr. Sarah Chen (Principal Investigator)",
+    "Dr. Michael Torres (Site Physician)",
+    "Priya Nair (Clinical Data Coordinator)",
+    "James Okafor (Data Quality Analyst)"
+  ];
+
+  var WORKFLOW_STEPS = [
+    { title: "Ingest", detail: "Receive incoming raw batch from external EHRs, clinical feeds, or labs." },
+    { title: "Parse", detail: "Organize source data rows into a structured internal representation." },
+    { title: "Normalize", detail: "Map source-specific vocabulary and casing into expected schema keys." },
+    { title: "Validate", detail: "Check the structured representation against explicit, deterministic quality rules." },
+    { title: "Flag", detail: "Quarantine records that violate configured rules — never drop or mutate silently." },
+    { title: "Review", detail: "Route findings to domain-expert reviewers with clear context on what failed." },
+    { title: "Resolve", detail: "Capture human judgment, operational sign-off, and an audit trail." },
+    { title: "Revalidate", detail: "Re-run validation checks on corrected records to verify compliance before release." },
+    { title: "Pass", detail: "Allow records that satisfy configured checks to continue to downstream analytics." }
+  ];
+
+  // ---------------------------------------------------------------------
+  // Validation
+  // ---------------------------------------------------------------------
+  function validateRow(row) {
+    var issues = [];
+
+    // Schema check: any key present that is a known misnamed variant of a
+    // required field.
+    Object.keys(row).forEach(function (key) {
+      if (KNOWN_MISNAMES[key]) {
+        issues.push({
+          rule: "Schema mismatch",
+          code: "FIELD_NAME_MATCH",
+          field: key,
+          detail: "Column \"" + key + "\" should be \"" + KNOWN_MISNAMES[key] + "\""
+        });
+      }
+    });
+
+    REQUIRED_FIELDS.forEach(function (field) {
+      var value = row[field];
+      var isMissing = value === undefined || value === null || value === "";
+      if (isMissing) {
+        // Don't double-report a field that's already flagged as a schema mismatch.
+        var coveredByMismatch = issues.some(function (i) { return i.rule === "Schema mismatch"; }) && field === "siteId";
+        if (!coveredByMismatch) {
+          issues.push({ rule: "Missing field", code: "REQUIRED_FIELD_PRESENT", field: field, detail: "\"" + field + "\" is required but missing" });
+        }
+      }
+    });
+
+    if (row.labValue !== undefined && row.labValue !== null && row.labValue !== "" && typeof row.labValue !== "number") {
+      issues.push({ rule: "Invalid data type", code: "TYPE_CHECK", field: "labValue", detail: "labValue \"" + row.labValue + "\" is not numeric" });
+    }
+
+    if (row.visitDate && !/^\d{4}-\d{2}-\d{2}$/.test(row.visitDate)) {
+      issues.push({ rule: "Invalid data type", code: "TYPE_CHECK", field: "visitDate", detail: "visitDate \"" + row.visitDate + "\" is not in YYYY-MM-DD format" });
+    }
+
+    if (typeof row.labValue === "number" && row.labTest && REFERENCE_RANGES[row.labTest]) {
+      var range = REFERENCE_RANGES[row.labTest];
+      if (row.labValue < range.min || row.labValue > range.max) {
+        issues.push({
+          rule: "Out-of-range value",
+          code: "RANGE_CHECK",
+          field: "labValue",
+          detail: row.labTest + " " + row.labValue + " " + (row.unit || "") + " is outside normal range (" + range.min + "–" + range.max + " " + (row.unit || "") + ")"
+        });
+      }
+    }
+
+    return issues;
+  }
+
+  function effectiveSiteId(row) {
+    if (row.siteId) return row.siteId;
+    for (var key in KNOWN_MISNAMES) {
+      if (KNOWN_MISNAMES[key] === "siteId" && row[key]) return row[key] + " (unverified)";
+    }
+    return "—";
+  }
+
+  // ---------------------------------------------------------------------
+  // State
+  // ---------------------------------------------------------------------
+  var state = {
+    validated: false,
+    filter: "all",
+    rows: RAW_ROWS.map(function (row, idx) {
+      return {
+        id: idx,
+        findingId: "FIND-CM" + String(idx + 1).padStart(3, "0"),
+        data: row,
+        issues: null,
+        status: "pending", // pending | pass | flagged | resolved
+        reviewer: "",
+        lastLoggedReviewer: "",
+        resolutionNote: "",
+        resolvedAt: null,
+        auditTrail: [],
+        queueMinutes: 12 + Math.floor(Math.random() * 220) // simulated time sitting in queue
+      };
+    })
+  };
+
+  var modalState = { openRowId: null };
+
+  function runValidation() {
+    state.rows.forEach(function (row) {
+      row.issues = validateRow(row.data);
+      row.status = row.issues.length > 0 ? "flagged" : "pass";
+      row.reviewer = "";
+      row.lastLoggedReviewer = "";
+      row.resolutionNote = "";
+      row.resolvedAt = null;
+      row.auditTrail = [];
+
+      if (row.status === "flagged") {
+        var firstIssue = row.issues[0];
+        var createdAt = new Date(Date.now() - row.queueMinutes * 60000);
+        row.auditTrail.push({
+          title: "Finding created",
+          actor: "CliniCalm Intake Gate",
+          detail: "Deterministic rule " + firstIssue.code + " failed on field \"" + firstIssue.field + "\"",
+          time: createdAt
+        });
+      }
+    });
+    state.validated = true;
+    render();
+  }
+
+  function resetDemo() {
+    state.validated = false;
+    state.filter = "all";
+    state.rows.forEach(function (row) {
+      row.issues = null;
+      row.status = "pending";
+      row.reviewer = "";
+      row.lastLoggedReviewer = "";
+      row.resolutionNote = "";
+      row.resolvedAt = null;
+      row.auditTrail = [];
+      row.queueMinutes = 12 + Math.floor(Math.random() * 220);
+    });
+    closeModal();
+    render();
+  }
+
+  function formatMinutes(mins) {
+    if (mins < 60) return mins + "m";
+    var h = Math.floor(mins / 60);
+    var m = mins % 60;
+    return h + "h " + (m ? m + "m" : "");
+  }
+
+  function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+
+  function formatDateTime(d) {
+    return pad2(d.getMonth() + 1) + "/" + pad2(d.getDate()) + "/" + d.getFullYear() + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+  }
+
+  function formatClock(d) {
+    return pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
+  }
+
+  // ---------------------------------------------------------------------
+  // Rendering — main demo view
+  // ---------------------------------------------------------------------
+  var els = {
+    runBtn: document.getElementById("runBtn"),
+    resetBtn: document.getElementById("resetBtn"),
+    tableWrap: document.getElementById("tableWrap"),
+    tabs: document.getElementById("tabs"),
+    statTotal: document.getElementById("statTotal"),
+    statFlagged: document.getElementById("statFlagged"),
+    statFlaggedSub: document.getElementById("statFlaggedSub"),
+    statResolved: document.getElementById("statResolved"),
+    statResolvedSub: document.getElementById("statResolvedSub"),
+    statAvgTime: document.getElementById("statAvgTime")
+  };
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function renderStats() {
+    var total = state.rows.length;
+    var flagged = state.rows.filter(function (r) { return r.status === "flagged"; }).length;
+    var resolved = state.rows.filter(function (r) { return r.status === "resolved"; }).length;
+
+    els.statTotal.textContent = total;
+    els.statFlagged.textContent = state.validated ? flagged : "—";
+    els.statFlaggedSub.textContent = state.validated ? "awaiting review" : "run validation to check";
+    els.statResolved.textContent = state.validated ? resolved : "—";
+
+    var flaggedTotal = state.rows.filter(function (r) { return r.status === "flagged" || r.status === "resolved"; }).length;
+    els.statResolvedSub.textContent = flaggedTotal ? "of " + flaggedTotal + " flagged" : "closed by reviewers";
+
+    var resolvedRows = state.rows.filter(function (r) { return r.status === "resolved"; });
+    if (resolvedRows.length === 0) {
+      els.statAvgTime.textContent = "—";
+    } else {
+      var avg = resolvedRows.reduce(function (sum, r) { return sum + r.queueMinutes; }, 0) / resolvedRows.length;
+      els.statAvgTime.textContent = formatMinutes(Math.round(avg));
+    }
+  }
+
+  function statusBadge(row) {
+    if (!state.validated) return '<span class="badge neutral">Not run</span>';
+    if (row.status === "pass") return '<span class="badge pass"><span class="dot"></span>Passed</span>';
+    if (row.status === "resolved") return '<span class="badge resolved"><span class="dot"></span>Resolved</span>';
+    return '<span class="badge flag"><span class="dot"></span>Flagged</span>';
+  }
+
+  function issueCell(row) {
+    if (!state.validated) return '<span class="cell-muted">—</span>';
+    if (!row.issues || row.issues.length === 0) return '<span class="cell-muted">No issues found</span>';
+    return row.issues.map(function (i) {
+      return '<span class="issue-text">' + escapeHtml(i.detail) + '<span class="rule">' + escapeHtml(i.rule) + '</span></span>';
+    }).join("");
+  }
+
+  function reviewerCell(row) {
+    if (row.status !== "flagged" && row.status !== "resolved") return '<span class="cell-muted">—</span>';
+    return row.reviewer ? escapeHtml(row.reviewer) : '<span class="cell-muted">Unassigned</span>';
+  }
+
+  function actionCell(row) {
+    if (!state.validated) return '<span class="cell-muted">—</span>';
+    if (row.status === "pass") return '<span class="cell-muted">No action needed</span>';
+    if (row.status === "flagged") {
+      return '<div class="row-actions">' +
+        '<span class="cell-muted" style="font-size:11.5px;"><span class="pulse"></span>in queue ' + formatMinutes(row.queueMinutes) + '</span>' +
+        '<button class="btn btn-sm btn-primary" data-action="open-finding" data-row="' + row.id + '">Review</button>' +
+        '</div>';
+    }
+    if (row.status === "resolved") {
+      return '<div class="row-actions">' +
+        '<span class="cell-muted">Resolved in ' + formatMinutes(row.queueMinutes) + '</span>' +
+        '<button class="btn btn-sm" data-action="open-finding" data-row="' + row.id + '">View</button>' +
+        '</div>';
+    }
+    return '<span class="cell-muted">—</span>';
+  }
+
+  function visibleRows() {
+    return state.rows.filter(function (row) {
+      if (state.filter === "all") return true;
+      if (state.filter === "flagged") return row.status === "flagged";
+      if (state.filter === "resolved") return row.status === "resolved";
+      if (state.filter === "passed") return row.status === "pass";
+      return true;
+    });
+  }
+
+  function renderTable() {
+    var rows = visibleRows();
+
+    if (rows.length === 0) {
+      var msg = state.validated
+        ? '<div class="empty-state"><div class="icon">&#128269;</div><h3>Nothing here</h3><p>No rows match this filter.</p></div>'
+        : '<div class="empty-state"><div class="icon">&#128203;</div><h3>Nothing here yet</h3><p>Run validation first, then this filter will have results.</p></div>';
+      els.tableWrap.innerHTML = msg;
+      return;
+    }
+
+    var html = '<table><thead><tr>' +
+      '<th>Patient ID</th><th>Visit date</th><th>Lab test</th><th>Value</th><th>Unit</th><th>Site</th>' +
+      '<th>Status</th><th>Issue</th><th>Reviewer</th><th>Action</th>' +
+      '</tr></thead><tbody>';
+
+    rows.forEach(function (row) {
+      var d = row.data;
+      html += '<tr>' +
+        '<td class="mono">' + escapeHtml(d.patientId || "—") + '</td>' +
+        '<td class="mono">' + escapeHtml(d.visitDate || "—") + '</td>' +
+        '<td>' + escapeHtml(d.labTest || "—") + '</td>' +
+        '<td class="mono">' + escapeHtml(d.labValue === null || d.labValue === undefined || d.labValue === "" ? "—" : d.labValue) + '</td>' +
+        '<td class="cell-muted">' + escapeHtml(d.unit || "—") + '</td>' +
+        '<td class="mono">' + escapeHtml(effectiveSiteId(d)) + '</td>' +
+        '<td>' + statusBadge(row) + '</td>' +
+        '<td>' + issueCell(row) + '</td>' +
+        '<td>' + reviewerCell(row) + '</td>' +
+        '<td>' + actionCell(row) + '</td>' +
+        '</tr>';
+    });
+
+    html += '</tbody></table>';
+    els.tableWrap.innerHTML = html;
+  }
+
+  function renderSteps() {
+    var grid = document.getElementById("stepsGrid");
+    grid.innerHTML = WORKFLOW_STEPS.map(function (step, i) {
+      return '<div class="step-card">' +
+        '<div class="step-num">' + (i + 1) + '</div>' +
+        '<h4>' + escapeHtml(step.title) + '</h4>' +
+        '<p>' + escapeHtml(step.detail) + '</p>' +
+        '</div>';
+    }).join("");
+  }
+
+  function render() {
+    renderStats();
+    renderTable();
+    els.runBtn.textContent = state.validated ? "Re-run validation" : "Run validation";
+    if (modalState.openRowId !== null) renderModal();
+  }
+
+  // ---------------------------------------------------------------------
+  // Rendering — finding modal (review, sign-off, audit trail)
+  // ---------------------------------------------------------------------
+  function renderModal() {
+    var row = state.rows[modalState.openRowId];
+    if (!row) return;
+
+    document.getElementById("modalFindingId").textContent = "Finding ID: " + row.findingId;
+    document.getElementById("modalTitle").textContent = row.data.patientId + " — " + (row.issues && row.issues[0] ? row.issues[0].rule : "Finding");
+
+    var rawPayloadHtml =
+      '<details class="raw-payload">' +
+        '<summary>&#128196; Validation details &amp; raw ingest payload</summary>' +
+        '<pre class="mono">' + escapeHtml(JSON.stringify(row.data, null, 2)) + '</pre>' +
+      '</details>';
+
+    var isResolved = row.status === "resolved";
+    var reviewerOptions = REVIEWERS.map(function (r) {
+      return '<option value="' + escapeHtml(r) + '"' + (row.reviewer === r ? " selected" : "") + '>' + escapeHtml(r) + '</option>';
+    }).join("");
+
+    var reviewPanelHtml =
+      '<div class="review-panel">' +
+        '<div class="review-panel-head"><h4>Review &amp; sign-off</h4><span class="cell-muted">Status: <strong>' + (isResolved ? "Resolved" : "Flagged") + '</strong></span></div>' +
+        '<div class="field-group">' +
+          '<label class="field-label" for="modalReviewer">Assigned reviewer</label>' +
+          '<select class="form-control" id="modalReviewer" ' + (isResolved ? "disabled" : "") + '>' +
+            '<option value=""' + (row.reviewer ? "" : " selected") + ' disabled>Select a reviewer…</option>' +
+            reviewerOptions +
+          '</select>' +
+        '</div>' +
+        '<div class="field-group">' +
+          '<label class="field-label" for="modalNote">Resolution note <span class="required-mark">*required</span></label>' +
+          '<textarea class="form-control" id="modalNote" placeholder="What was wrong, and how was it fixed?" ' + (isResolved ? "disabled" : "") + '>' + escapeHtml(row.resolutionNote) + '</textarea>' +
+        '</div>' +
+        '<div class="review-footer-row">' +
+          '<button class="btn ' + (isResolved ? "" : "btn-primary") + '" id="modalResolveBtn" ' + (isResolved || !row.reviewer || !row.resolutionNote.trim() ? "disabled" : "") + '>' +
+            (isResolved ? "&#10003; Resolved &amp; passed" : "Resolved &amp; passed") +
+          '</button>' +
+          (isResolved ? '<span class="cell-muted mono">Resolved at ' + formatDateTime(row.resolvedAt) + '</span>' : '<span></span>') +
+        '</div>' +
+      '</div>';
+
+    var successBannerHtml = isResolved ?
+      '<div class="success-banner">' +
+        '<strong>&#9989; Signed off — record passed</strong>' +
+        '<span class="pill">Released downstream</span>' +
+      '</div>' : "";
+
+    var auditHtml = '<div class="audit-trail"><h4>Operational audit trail</h4>' +
+      row.auditTrail.map(function (ev) {
+        return '<div class="audit-item">' +
+          '<div class="audit-item-head"><span>' + escapeHtml(ev.title) + '</span><span class="audit-item-time">' + formatClock(ev.time) + '</span></div>' +
+          '<div class="audit-item-sub">Actor: <strong>' + escapeHtml(ev.actor) + '</strong> — ' + escapeHtml(ev.detail) + '</div>' +
+          '</div>';
+      }).join("") +
+    '</div>';
+
+    document.getElementById("modalBody").innerHTML = rawPayloadHtml + reviewPanelHtml + successBannerHtml + auditHtml;
+  }
+
+  function openModal(rowId) {
+    modalState.openRowId = rowId;
+    renderModal();
+    document.getElementById("findingModal").hidden = false;
+  }
+
+  function closeModal() {
+    document.getElementById("findingModal").hidden = true;
+    modalState.openRowId = null;
+  }
+
+  // ---------------------------------------------------------------------
+  // Events — demo view
+  // ---------------------------------------------------------------------
+  els.runBtn.addEventListener("click", runValidation);
+  els.resetBtn.addEventListener("click", resetDemo);
+
+  els.tabs.addEventListener("click", function (e) {
+    var btn = e.target.closest(".tab");
+    if (!btn) return;
+    state.filter = btn.getAttribute("data-filter");
+    Array.prototype.forEach.call(els.tabs.querySelectorAll(".tab"), function (t) { t.classList.remove("active"); });
+    btn.classList.add("active");
+    renderTable();
+  });
+
+  els.tableWrap.addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-action='open-finding']");
+    if (!btn) return;
+    openModal(parseInt(btn.getAttribute("data-row"), 10));
+  });
+
+  // ---------------------------------------------------------------------
+  // Events — view switch (Live demo / How it works)
+  // ---------------------------------------------------------------------
+  document.getElementById("viewSwitch").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-view]");
+    if (!btn) return;
+    var view = btn.getAttribute("data-view");
+    Array.prototype.forEach.call(this.querySelectorAll("button"), function (b) { b.classList.toggle("active", b === btn); });
+    document.getElementById("demoView").hidden = view !== "demo";
+    document.getElementById("howView").hidden = view !== "how";
+  });
+
+  document.getElementById("disclaimerUnderstood").addEventListener("click", function () {
+    document.getElementById("disclaimerNote").hidden = true;
+  });
+
+  // ---------------------------------------------------------------------
+  // Events — finding modal
+  // ---------------------------------------------------------------------
+  document.getElementById("modalCloseX").addEventListener("click", closeModal);
+  document.getElementById("modalCloseBtn").addEventListener("click", closeModal);
+  document.getElementById("findingModal").addEventListener("click", function (e) {
+    if (e.target.id === "findingModal") closeModal();
+  });
+
+  document.getElementById("modalBody").addEventListener("change", function (e) {
+    if (e.target.id !== "modalReviewer") return;
+    var row = state.rows[modalState.openRowId];
+    var val = e.target.value;
+    row.reviewer = val;
+    if (val && val !== row.lastLoggedReviewer) {
+      row.auditTrail.push({
+        title: "Assigned to " + val,
+        actor: "Clinical Data Operations Lead",
+        detail: "Quarantined record routed to " + val,
+        time: new Date()
+      });
+      row.lastLoggedReviewer = val;
+    }
+    renderModal();
+    renderTable();
+  });
+
+  document.getElementById("modalBody").addEventListener("input", function (e) {
+    if (e.target.id !== "modalNote") return;
+    var row = state.rows[modalState.openRowId];
+    row.resolutionNote = e.target.value;
+    var btn = document.getElementById("modalResolveBtn");
+    if (btn) btn.disabled = !row.reviewer || !row.resolutionNote.trim();
+  });
+
+  document.getElementById("modalBody").addEventListener("click", function (e) {
+    if (e.target.id !== "modalResolveBtn") return;
+    var row = state.rows[modalState.openRowId];
+    if (!row.reviewer || !row.resolutionNote.trim() || row.status === "resolved") return;
+    row.status = "resolved";
+    row.resolvedAt = new Date();
+    var noteText = row.resolutionNote && row.resolutionNote.trim() ? row.resolutionNote.trim() : "no note provided";
+    row.auditTrail.push({
+      title: "Resolution signed off — Passed",
+      actor: row.reviewer,
+      detail: "Signed off with note: \"" + noteText + "\"",
+      time: row.resolvedAt
+    });
+    renderModal();
+    renderTable();
+    renderStats();
+  });
+
+  renderSteps();
+  render();
+})();
+</script>
+</body>
+</html>
