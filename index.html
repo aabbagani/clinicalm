@@ -372,11 +372,55 @@
     font-size: 13px;
     font-weight: 600;
   }
-  .pipeline .node.gate { background: var(--brand); color: #fff; border-color: var(--brand); }
-  .pipeline .arrow { color: var(--text-muted); font-size: 20px; flex: 0 0 auto; }
+  .pipeline .flow {
+    position: relative;
+    flex: 1.2;
+    min-width: 150px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pipeline .flow::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 3px; top: 50%;
+    border-top: 2px solid var(--text-muted);
+    transform: translateY(-50%);
+  }
+  .pipeline .flow::after {
+    content: "";
+    position: absolute;
+    right: 0; top: 50%;
+    width: 8px; height: 8px;
+    border-top: 2px solid var(--text-muted);
+    border-right: 2px solid var(--text-muted);
+    transform: translateY(-50%) rotate(45deg);
+  }
+  .pipeline .chip {
+    position: relative;
+    z-index: 1;
+    background: var(--brand-tint);
+    color: var(--brand-dark);
+    border: 1px solid var(--brand);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
   @media (max-width: 640px) {
-    .pipeline { flex-direction: column; }
-    .pipeline .arrow { transform: rotate(90deg); }
+    .pipeline { flex-direction: column; align-items: stretch; }
+    .pipeline .flow { flex: none; width: 100%; height: 64px; }
+    .pipeline .flow::before {
+      left: 50%; right: auto; top: 0; bottom: 3px;
+      border-top: none; border-left: 2px solid var(--text-muted);
+      transform: translateX(-50%);
+    }
+    .pipeline .flow::after {
+      left: 50%; right: auto; top: auto; bottom: 0;
+      transform: translateX(-50%) rotate(135deg);
+    }
   }
 
   .principle-box {
@@ -560,9 +604,7 @@
 
       <div class="pipeline">
         <div class="node">Incoming clinical feeds</div>
-        <div class="arrow">&#8594;</div>
-        <div class="node gate">CliniCalm intake gate</div>
-        <div class="arrow">&#8594;</div>
+        <div class="flow"><span class="chip">&#10003; CliniCalm check</span></div>
         <div class="node">Downstream warehouse / analytics</div>
       </div>
 
@@ -589,7 +631,6 @@
 
       <div class="disclaimer-note" id="disclaimerNote">
         <p><strong>Case study note:</strong> CliniCalm is an independent product concept and prototype, built strictly with synthetic clinical data for demonstration purposes. It is not an official Flatiron Health product.</p>
-        <button class="btn btn-sm" id="disclaimerUnderstood">Understood</button>
       </div>
     </section>
   </div>
@@ -1065,10 +1106,6 @@
     Array.prototype.forEach.call(this.querySelectorAll("button"), function (b) { b.classList.toggle("active", b === btn); });
     document.getElementById("demoView").hidden = view !== "demo";
     document.getElementById("howView").hidden = view !== "how";
-  });
-
-  document.getElementById("disclaimerUnderstood").addEventListener("click", function () {
-    document.getElementById("disclaimerNote").hidden = true;
   });
 
   // ---------------------------------------------------------------------
