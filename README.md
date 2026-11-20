@@ -1,2 +1,2 @@
 # clinicalm
-Flatiron Health Teardown: An intake quality gate for clinical trial data
+CliniCalm: an intake quality gate for clinical trial data, designed from a Flatiron Health product teardown (independent concept, synthetic data)
