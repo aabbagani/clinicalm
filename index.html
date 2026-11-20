@@ -552,6 +552,33 @@
   .audit-item-head { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 600; }
   .audit-item-time { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px; color: var(--text-muted); white-space: nowrap; }
   .audit-item-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  /* Phones: the table scrolls inside its panel instead of being cut off. */
+  #tableWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .sample-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; font-size: 12px; }
+  .badge.rejected { background: #f6e9e9; color: #8a2b2b; }
+  .issue-text.note { color: var(--text-muted); }
+  .was { display: block; font-size: 11px; color: var(--text-muted); text-decoration: line-through; }
+  input.form-control {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 7px;
+    font-family: inherit; font-size: 13px; background: var(--panel); color: var(--text); box-sizing: border-box;
+  }
+  .outcome-option {
+    display: flex; gap: 10px; align-items: flex-start; padding: 9px 10px; margin-bottom: 6px;
+    border: 1px solid var(--border); border-radius: 7px; cursor: pointer; font-size: 13px;
+  }
+  .outcome-option input { margin-top: 3px; }
+  .outcome-option.disabled { opacity: 0.55; cursor: not-allowed; }
+  .outcome-desc { display: block; font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .error-banner {
+    background: var(--flag-bg); border: 1px solid var(--flag); color: var(--flag);
+    border-radius: 7px; padding: 9px 12px; font-size: 12.5px; margin-bottom: 12px;
+  }
+  .reject-banner {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    background: #f6e9e9; border: 1px solid #8a2b2b; border-radius: var(--radius); padding: 9px 14px;
+  }
+  .reject-banner strong { color: #8a2b2b; font-size: 12.5px; font-weight: 700; }
+  .reject-banner .pill { border-color: #8a2b2b; color: #8a2b2b; }
 </style>
 </head>
 <body>
@@ -622,18 +649,7 @@
     <section id="howView" class="how-section" hidden>
       <div class="how-header">
         <h2>How CliniCalm works</h2>
-        <p>Intake-quality gate architecture &amp; workflow</p>
-      </div>
-
-      <div class="pipeline">
-        <div class="node">Incoming clinical feeds</div>
-        <div class="flow"><span class="chip">&#10003; CliniCalm check</span></div>
-        <div class="node">Downstream warehouse / analytics</div>
-      </div>
-
-      <div class="principle-box">
-        <blockquote>“Catch the problem at step one instead of step five.”</blockquote>
-        <p>Incoming data does not automatically become trusted data simply because it was successfully ingested. CliniCalm sits at the front of the clinical data pipeline to prevent flawed data from traveling downstream, where diagnosis errors and corrupted cohort selections become exponentially more costly to untangle.</p>
+        <p>Catch the problem at step one instead of step five.</p>
       </div>
 
       <div class="compare-grid">
@@ -643,7 +659,7 @@
         </div>
         <div class="compare-card good">
           <h3>With CliniCalm gate (at intake)</h3>
-          <p>Raw data ingested &#8594; deterministic schema, domain, and consistency rules run instantly &#8594; flawed records quarantined at step 1, with human-in-the-loop review.</p>
+          <p>Raw data ingested &#8594; deterministic schema, domain, and consistency rules run instantly &#8594; flawed records quarantined at step 1, routed to the right reviewer, and released only once they pass.</p>
         </div>
       </div>
 
@@ -684,8 +700,10 @@
   //  - P007: missing labValue (missing field)
   //  - P018: missing visitDate (missing field)
   //  - P005: labValue is a string, not a number (wrong data type)
-  //  - P009, P016: labValue outside the physiologically plausible range
+  //  - P009, P016: labValue outside what a living patient can have (implausible)
   //  - P013: siteId column arrived misnamed as "site_ID" (schema mismatch)
+  // And one row that is abnormal but real, so it passes with a note:
+  //  - P010: hemoglobin 9.4 g/dL, the anemia common in patients on chemotherapy
   // ---------------------------------------------------------------------
   var RAW_ROWS = [
     { patientId: "P001", visitDate: "2026-01-05", labTest: "Hemoglobin", labValue: 14.2, unit: "g/dL", siteId: "S01" },
@@ -697,7 +715,7 @@
     { patientId: "P007", visitDate: "2026-01-08", labTest: "Hemoglobin", labValue: null, unit: "g/dL", siteId: "S01" },
     { patientId: "P008", visitDate: "2026-01-09", labTest: "Glucose",    labValue: 110,  unit: "mg/dL", siteId: "S02" },
     { patientId: "P009", visitDate: "2026-01-09", labTest: "Potassium", labValue: 9.8,  unit: "mmol/L", siteId: "S03" },
-    { patientId: "P010", visitDate: "2026-01-10", labTest: "Hemoglobin", labValue: 15.1, unit: "g/dL", siteId: "S03" },
+    { patientId: "P010", visitDate: "2026-01-10", labTest: "Hemoglobin", labValue: 9.4,  unit: "g/dL", siteId: "S03" },
     { patientId: "P011", visitDate: "2026-01-10", labTest: "Glucose",    labValue: 88,   unit: "mg/dL", siteId: "S01" },
     { patientId: "P012", visitDate: "2026-01-11", labTest: "Potassium", labValue: 3.9,  unit: "mmol/L", siteId: "S02" },
     { patientId: "P013", visitDate: "2026-01-11", labTest: "Hemoglobin", labValue: 12.9, unit: "g/dL", site_ID: "S01" },
@@ -711,29 +729,46 @@
   var REQUIRED_FIELDS = ["patientId", "visitDate", "labTest", "labValue", "unit", "siteId"];
   var KNOWN_MISNAMES = { site_ID: "siteId", SiteID: "siteId", Site: "siteId", location: "siteId" };
 
+  // Normal reference ranges. Outside these is abnormal, not wrong: oncology
+  // patients are often anemic, so these only add an informational note.
   var REFERENCE_RANGES = {
     Hemoglobin: { min: 12, max: 17 },
     Glucose:    { min: 70, max: 140 },
     Potassium:  { min: 3.5, max: 5.1 }
   };
 
+  // Physiologically plausible limits. Outside these is almost certainly an
+  // entry or unit error, so the record is quarantined.
+  var PLAUSIBLE_RANGES = {
+    Hemoglobin: { min: 3, max: 25 },
+    Glucose:    { min: 20, max: 1500 },
+    Potassium:  { min: 1.5, max: 8 }
+  };
+
   var REVIEWERS = [
-    "Dr. Sarah Chen (Principal Investigator)",
-    "Dr. Michael Torres (Site Physician)",
-    "Priya Nair (Clinical Data Coordinator)",
-    "James Okafor (Data Quality Analyst)"
+    { name: "Dr. Sarah Chen", role: "Principal Investigator", clinician: true },
+    { name: "Dr. Michael Torres", role: "Site Physician", clinician: true },
+    { name: "Priya Nair", role: "Clinical Data Coordinator", clinician: false },
+    { name: "James Okafor", role: "Data Quality Analyst", clinician: false }
   ];
+  function reviewerLabel(r) { return r.name + " (" + r.role + ")"; }
+  var DATA_ROUTE = reviewerLabel(REVIEWERS[2]);
+  var CLINICAL_ROUTE = reviewerLabel(REVIEWERS[1]);
+
+  function isClinician(label) {
+    return REVIEWERS.some(function (r) { return r.clinician && reviewerLabel(r) === label; });
+  }
 
   var WORKFLOW_STEPS = [
     { title: "Ingest", detail: "Receive incoming raw batch from external EHRs, clinical feeds, or labs." },
     { title: "Parse", detail: "Organize source data rows into a structured internal representation." },
     { title: "Normalize", detail: "Map source-specific vocabulary and casing into expected schema keys." },
-    { title: "Validate", detail: "Check the structured representation against explicit, deterministic quality rules." },
-    { title: "Flag", detail: "Quarantine records that violate configured rules — never drop or mutate silently." },
-    { title: "Review", detail: "Route findings to domain-expert reviewers with clear context on what failed." },
-    { title: "Resolve", detail: "Capture human judgment, operational sign-off, and an audit trail." },
-    { title: "Revalidate", detail: "Re-run validation checks on corrected records to verify compliance before release." },
-    { title: "Pass", detail: "Allow records that satisfy configured checks to continue to downstream analytics." }
+    { title: "Validate", detail: "Check schema, required fields, data types, and physiologically plausible ranges with deterministic rules." },
+    { title: "Flag", detail: "Quarantine records that fail a rule. Abnormal but plausible values pass with an informational note." },
+    { title: "Route", detail: "Send data problems to data coordination and implausible clinical values to a clinician, with the reason attached." },
+    { title: "Resolve", detail: "The reviewer corrects the value, confirms it is real (clinicians only), or rejects the record, with a required note." },
+    { title: "Revalidate", detail: "Re-run the same rules on every correction. A corrected record is released only if it now passes." },
+    { title: "Release", detail: "Passed, corrected, and clinician-confirmed records continue to analytics. Rejected records never do." }
   ];
 
   // ---------------------------------------------------------------------
@@ -741,6 +776,7 @@
   // ---------------------------------------------------------------------
   function validateRow(row) {
     var issues = [];
+    var notes = [];
 
     // Schema check: any key present that is a known misnamed variant of a
     // required field.
@@ -775,19 +811,23 @@
       issues.push({ rule: "Invalid data type", code: "TYPE_CHECK", field: "visitDate", detail: "visitDate \"" + row.visitDate + "\" is not in YYYY-MM-DD format" });
     }
 
-    if (typeof row.labValue === "number" && row.labTest && REFERENCE_RANGES[row.labTest]) {
-      var range = REFERENCE_RANGES[row.labTest];
-      if (row.labValue < range.min || row.labValue > range.max) {
+    if (typeof row.labValue === "number" && row.labTest && PLAUSIBLE_RANGES[row.labTest]) {
+      var plausible = PLAUSIBLE_RANGES[row.labTest];
+      var normal = REFERENCE_RANGES[row.labTest];
+      var unit = row.unit || "";
+      if (row.labValue < plausible.min || row.labValue > plausible.max) {
         issues.push({
-          rule: "Out-of-range value",
-          code: "RANGE_CHECK",
+          rule: "Implausible value",
+          code: "PLAUSIBILITY_CHECK",
           field: "labValue",
-          detail: row.labTest + " " + row.labValue + " " + (row.unit || "") + " is outside normal range (" + range.min + "–" + range.max + " " + (row.unit || "") + ")"
+          detail: row.labTest + " " + row.labValue + " " + unit + " is outside what a living patient can have (" + plausible.min + "–" + plausible.max + " " + unit + "), likely an entry or unit error"
         });
+      } else if (normal && (row.labValue < normal.min || row.labValue > normal.max)) {
+        notes.push(row.labTest + " " + row.labValue + " " + unit + " is outside the normal range (" + normal.min + "–" + normal.max + " " + unit + ") but plausible");
       }
     }
 
-    return issues;
+    return { issues: issues, notes: notes };
   }
 
   function effectiveSiteId(row) {
@@ -798,51 +838,100 @@
     return "—";
   }
 
+  // Data problems go to data coordination; an implausible clinical value
+  // goes to a clinician, because only a clinician can say it is real.
+  function routeFor(issues) {
+    var clinical = issues.some(function (i) { return i.rule === "Implausible value"; });
+    return {
+      reviewer: clinical ? CLINICAL_ROUTE : DATA_ROUTE,
+      reason: clinical
+        ? "Clinical value: only a clinician can confirm it is real"
+        : "Data problem: routed to clinical data coordination"
+    };
+  }
+
   // ---------------------------------------------------------------------
   // State
   // ---------------------------------------------------------------------
+  var RESOLVED_STATUSES = ["corrected", "confirmed", "rejected"];
+  function isResolved(row) { return RESOLVED_STATUSES.indexOf(row.status) !== -1; }
+  function isReleased(row) { return row.status === "corrected" || row.status === "confirmed"; }
+
+  function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
+
+  function freshRow(row, idx) {
+    return {
+      id: idx,
+      findingId: "FIND-CM" + String(idx + 1).padStart(3, "0"),
+      original: clone(row),
+      data: clone(row),
+      issues: null,
+      notes: [],
+      status: "pending", // pending | pass | flagged | corrected | confirmed | rejected
+      reviewer: "",
+      lastLoggedReviewer: "",
+      outcome: "",       // correct | confirm | reject
+      correction: "",
+      resolveError: "",
+      resolutionNote: "",
+      noteIsSample: false,
+      findingCreatedAt: null,
+      resolvedAt: null,
+      auditTrail: [],
+      queueMinutes: 12 + Math.floor(Math.random() * 220) // simulated time the finding waited before this session
+    };
+  }
+
   var state = {
     validated: false,
     filter: "all",
-    rows: RAW_ROWS.map(function (row, idx) {
-      return {
-        id: idx,
-        findingId: "FIND-CM" + String(idx + 1).padStart(3, "0"),
-        data: row,
-        issues: null,
-        status: "pending", // pending | pass | flagged | resolved
-        reviewer: "",
-        lastLoggedReviewer: "",
-        resolutionNote: "",
-        resolvedAt: null,
-        auditTrail: [],
-        queueMinutes: 12 + Math.floor(Math.random() * 220) // simulated time sitting in queue
-      };
-    })
+    rows: RAW_ROWS.map(freshRow)
   };
 
   var modalState = { openRowId: null };
 
   function runValidation() {
     state.rows.forEach(function (row) {
-      row.issues = validateRow(row.data);
-      row.status = row.issues.length > 0 ? "flagged" : "pass";
-      row.reviewer = "";
-      row.lastLoggedReviewer = "";
-      row.resolutionNote = "";
-      row.resolvedAt = null;
-      row.auditTrail = [];
+      // A closed finding keeps its decision and its audit trail.
+      if (isResolved(row)) return;
 
-      if (row.status === "flagged") {
-        var firstIssue = row.issues[0];
-        var createdAt = new Date(Date.now() - row.queueMinutes * 60000);
-        row.auditTrail.push({
-          title: "Finding created",
-          actor: "CliniCalm Intake Gate",
-          detail: "Deterministic rule " + firstIssue.code + " failed on field \"" + firstIssue.field + "\"",
-          time: createdAt
-        });
+      var result = validateRow(row.data);
+      var wasOpen = row.status === "flagged";
+      row.issues = result.issues;
+      row.notes = result.notes;
+
+      if (result.issues.length === 0) {
+        row.status = "pass";
+        return;
       }
+
+      row.status = "flagged";
+      if (wasOpen) {
+        row.auditTrail.push({
+          title: "Re-checked in batch re-run",
+          actor: "CliniCalm Intake Gate",
+          detail: "Rule " + result.issues[0].code + " still fails; finding stays open",
+          time: new Date()
+        });
+        return;
+      }
+
+      row.findingCreatedAt = new Date(Date.now() - row.queueMinutes * 60000);
+      row.auditTrail.push({
+        title: "Finding created",
+        actor: "CliniCalm Intake Gate",
+        detail: "Deterministic rule " + result.issues[0].code + " failed on field \"" + result.issues[0].field + "\"",
+        time: row.findingCreatedAt
+      });
+      var route = routeFor(result.issues);
+      row.reviewer = route.reviewer;
+      row.lastLoggedReviewer = route.reviewer;
+      row.auditTrail.push({
+        title: "Routed to " + route.reviewer,
+        actor: "CliniCalm Intake Gate",
+        detail: route.reason,
+        time: new Date(row.findingCreatedAt.getTime() + 1000)
+      });
     });
     state.validated = true;
     render();
@@ -851,19 +940,16 @@
   function resetDemo() {
     state.validated = false;
     state.filter = "all";
-    state.rows.forEach(function (row) {
-      row.issues = null;
-      row.status = "pending";
-      row.reviewer = "";
-      row.lastLoggedReviewer = "";
-      row.resolutionNote = "";
-      row.resolvedAt = null;
-      row.auditTrail = [];
-      row.queueMinutes = 12 + Math.floor(Math.random() * 220);
+    state.rows = RAW_ROWS.map(freshRow);
+    Array.prototype.forEach.call(els.tabs.querySelectorAll(".tab"), function (t) {
+      t.classList.toggle("active", t.getAttribute("data-filter") === "all");
     });
     closeModal();
     render();
   }
+
+  function minutesBetween(a, b) { return Math.max(0, Math.round((b - a) / 60000)); }
+  function minutesOpen(row) { return minutesBetween(row.findingCreatedAt, row.resolvedAt || new Date()); }
 
   function formatMinutes(mins) {
     if (mins < 60) return mins + "m";
@@ -907,42 +993,54 @@
   function renderStats() {
     var total = state.rows.length;
     var flagged = state.rows.filter(function (r) { return r.status === "flagged"; }).length;
-    var resolved = state.rows.filter(function (r) { return r.status === "resolved"; }).length;
+    var resolvedRows = state.rows.filter(isResolved);
+    var released = resolvedRows.filter(isReleased).length;
+    var rejected = resolvedRows.length - released;
 
     els.statTotal.textContent = total;
     els.statFlagged.textContent = state.validated ? flagged : "—";
     els.statFlaggedSub.textContent = state.validated ? "awaiting review" : "run validation to check";
-    els.statResolved.textContent = state.validated ? resolved : "—";
+    els.statResolved.textContent = state.validated ? resolvedRows.length : "—";
+    els.statResolvedSub.textContent = resolvedRows.length
+      ? released + " released · " + rejected + " rejected"
+      : (state.validated ? "of " + flagged + " flagged" : "closed by reviewers");
 
-    var flaggedTotal = state.rows.filter(function (r) { return r.status === "flagged" || r.status === "resolved"; }).length;
-    els.statResolvedSub.textContent = flaggedTotal ? "of " + flaggedTotal + " flagged" : "closed by reviewers";
-
-    var resolvedRows = state.rows.filter(function (r) { return r.status === "resolved"; });
     if (resolvedRows.length === 0) {
       els.statAvgTime.textContent = "—";
     } else {
-      var avg = resolvedRows.reduce(function (sum, r) { return sum + r.queueMinutes; }, 0) / resolvedRows.length;
+      var avg = resolvedRows.reduce(function (sum, r) { return sum + minutesOpen(r); }, 0) / resolvedRows.length;
       els.statAvgTime.textContent = formatMinutes(Math.round(avg));
     }
   }
 
+  var STATUS_BADGES = {
+    pass: '<span class="badge pass"><span class="dot"></span>Passed</span>',
+    flagged: '<span class="badge flag"><span class="dot"></span>Flagged</span>',
+    corrected: '<span class="badge resolved"><span class="dot"></span>Corrected</span>',
+    confirmed: '<span class="badge resolved"><span class="dot"></span>Confirmed</span>',
+    rejected: '<span class="badge rejected"><span class="dot"></span>Rejected</span>'
+  };
+
   function statusBadge(row) {
-    if (!state.validated) return '<span class="badge neutral">Not run</span>';
-    if (row.status === "pass") return '<span class="badge pass"><span class="dot"></span>Passed</span>';
-    if (row.status === "resolved") return '<span class="badge resolved"><span class="dot"></span>Resolved</span>';
-    return '<span class="badge flag"><span class="dot"></span>Flagged</span>';
+    if (!state.validated || row.status === "pending") return '<span class="badge neutral">Not run</span>';
+    return STATUS_BADGES[row.status];
   }
 
   function issueCell(row) {
-    if (!state.validated) return '<span class="cell-muted">—</span>';
-    if (!row.issues || row.issues.length === 0) return '<span class="cell-muted">No issues found</span>';
+    if (!state.validated || !row.issues) return '<span class="cell-muted">—</span>';
+    if (row.issues.length === 0) {
+      if (row.notes.length === 0) return '<span class="cell-muted">No issues found</span>';
+      return row.notes.map(function (n) {
+        return '<span class="issue-text note">' + escapeHtml(n) + '<span class="rule">Note only, not quarantined</span></span>';
+      }).join("");
+    }
     return row.issues.map(function (i) {
       return '<span class="issue-text">' + escapeHtml(i.detail) + '<span class="rule">' + escapeHtml(i.rule) + '</span></span>';
     }).join("");
   }
 
   function reviewerCell(row) {
-    if (row.status !== "flagged" && row.status !== "resolved") return '<span class="cell-muted">—</span>';
+    if (row.status !== "flagged" && !isResolved(row)) return '<span class="cell-muted">—</span>';
     return row.reviewer ? escapeHtml(row.reviewer) : '<span class="cell-muted">Unassigned</span>';
   }
 
@@ -951,24 +1049,36 @@
     if (row.status === "pass") return '<span class="cell-muted">No action needed</span>';
     if (row.status === "flagged") {
       return '<div class="row-actions">' +
-        '<span class="cell-muted" style="font-size:11.5px;"><span class="pulse"></span>in queue ' + formatMinutes(row.queueMinutes) + '</span>' +
+        '<span class="cell-muted" style="font-size:11.5px;"><span class="pulse"></span>open ' + formatMinutes(minutesOpen(row)) + '</span>' +
         '<button class="btn btn-sm btn-primary" data-action="open-finding" data-row="' + row.id + '">Review</button>' +
         '</div>';
     }
-    if (row.status === "resolved") {
+    if (isResolved(row)) {
       return '<div class="row-actions">' +
-        '<span class="cell-muted">Resolved in ' + formatMinutes(row.queueMinutes) + '</span>' +
+        '<span class="cell-muted">Closed in ' + formatMinutes(minutesOpen(row)) + '</span>' +
         '<button class="btn btn-sm" data-action="open-finding" data-row="' + row.id + '">View</button>' +
         '</div>';
     }
     return '<span class="cell-muted">—</span>';
   }
 
+  function displayValue(v) {
+    return v === null || v === undefined || v === "" ? "—" : v;
+  }
+
+  // Show a corrected value with what it replaced.
+  function valueCell(row, field, render) {
+    var now = render ? render(row.data) : displayValue(row.data[field]);
+    var was = render ? render(row.original) : displayValue(row.original[field]);
+    if (row.status !== "corrected" || now === was) return escapeHtml(now);
+    return escapeHtml(now) + '<span class="was">was ' + escapeHtml(was) + '</span>';
+  }
+
   function visibleRows() {
     return state.rows.filter(function (row) {
       if (state.filter === "all") return true;
       if (state.filter === "flagged") return row.status === "flagged";
-      if (state.filter === "resolved") return row.status === "resolved";
+      if (state.filter === "resolved") return isResolved(row);
       if (state.filter === "passed") return row.status === "pass";
       return true;
     });
@@ -994,11 +1104,11 @@
       var d = row.data;
       html += '<tr>' +
         '<td class="mono">' + escapeHtml(d.patientId || "—") + '</td>' +
-        '<td class="mono">' + escapeHtml(d.visitDate || "—") + '</td>' +
+        '<td class="mono">' + valueCell(row, "visitDate") + '</td>' +
         '<td>' + escapeHtml(d.labTest || "—") + '</td>' +
-        '<td class="mono">' + escapeHtml(d.labValue === null || d.labValue === undefined || d.labValue === "" ? "—" : d.labValue) + '</td>' +
+        '<td class="mono">' + valueCell(row, "labValue") + '</td>' +
         '<td class="cell-muted">' + escapeHtml(d.unit || "—") + '</td>' +
-        '<td class="mono">' + escapeHtml(effectiveSiteId(d)) + '</td>' +
+        '<td class="mono">' + valueCell(row, "siteId", effectiveSiteId) + '</td>' +
         '<td>' + statusBadge(row) + '</td>' +
         '<td>' + issueCell(row) + '</td>' +
         '<td>' + reviewerCell(row) + '</td>' +
@@ -1029,53 +1139,211 @@
   }
 
   // ---------------------------------------------------------------------
+  // Resolution: correct (then revalidate), confirm (clinicians only), reject
+  // ---------------------------------------------------------------------
+  function primaryIssue(row) { return row.issues && row.issues[0]; }
+
+  // What "correct the value" means for this finding.
+  function correctionFor(row) {
+    var issue = primaryIssue(row);
+    if (!issue) return null;
+    if (issue.rule === "Schema mismatch") {
+      return { kind: "remap", from: issue.field, to: KNOWN_MISNAMES[issue.field], label: "Rename column \"" + issue.field + "\" to \"" + KNOWN_MISNAMES[issue.field] + "\"" };
+    }
+    if (issue.field === "visitDate") return { kind: "input", field: "visitDate", label: "Corrected visit date", placeholder: "YYYY-MM-DD" };
+    if (issue.field === "labValue") return { kind: "input", field: "labValue", label: "Corrected " + (row.data.labTest || "lab") + " value (" + (row.data.unit || "") + ")", placeholder: "e.g. " + (REFERENCE_RANGES[row.data.labTest] ? REFERENCE_RANGES[row.data.labTest].min : "") };
+    return { kind: "input", field: issue.field, label: "Corrected " + issue.field, placeholder: "" };
+  }
+
+  // Sample answers so a visitor can click through without typing.
+  // Each is editable; entering a bad value shows revalidation refusing it.
+  var SAMPLES = {
+    P005: { correction: "182", note: "The lab report shows 182 mg/dL; the feed sent the high-value flag instead of the number." },
+    P007: { correction: "11.8", note: "Value recovered from the site's lab report PDF." },
+    P009: { correction: "4.8", note: "Sample was hemolyzed; a repeat draw the same day read 4.8 mmol/L." },
+    P013: { correction: "", note: "Site S01 exports this column as site_ID; mapped to siteId." },
+    P016: { correction: "11.5", note: "Hematocrit (34.5%) was entered in the hemoglobin field; the lab report shows hemoglobin 11.5 g/dL." },
+    P018: { correction: "2026-01-14", note: "Visit date taken from the site's visit log." }
+  };
+  var SAMPLE_NOTES = {
+    confirm: "Repeat test confirmed the value and it matches the patient's history.",
+    reject: "The source cannot supply a usable value; excluded from this batch."
+  };
+
+  function sampleNote(row, outcome) {
+    if (outcome === "correct") return (SAMPLES[row.data.patientId] || {}).note || "Corrected from the source document.";
+    return SAMPLE_NOTES[outcome] || "";
+  }
+
+  // Fill the sample for an outcome, without overwriting anything the visitor typed.
+  function applySample(row, outcome) {
+    var sample = SAMPLES[row.data.patientId] || {};
+    if (outcome === "correct" && !row.correction) row.correction = sample.correction || "";
+    if (!row.resolutionNote || row.noteIsSample) {
+      row.resolutionNote = sampleNote(row, outcome);
+      row.noteIsSample = true;
+    }
+  }
+
+  function canConfirm(row) {
+    var issue = primaryIssue(row);
+    return !!issue && issue.rule === "Implausible value" && isClinician(row.reviewer);
+  }
+
+  function readyToSignOff(row) {
+    if (!row.reviewer || !row.outcome || !row.resolutionNote.trim()) return false;
+    if (row.outcome === "correct") {
+      var c = correctionFor(row);
+      return c.kind === "remap" || row.correction.trim() !== "";
+    }
+    if (row.outcome === "confirm") return canConfirm(row);
+    return true;
+  }
+
+  function applyCorrection(row) {
+    var c = correctionFor(row);
+    var candidate = clone(row.data);
+    var change;
+    if (c.kind === "remap") {
+      candidate[c.to] = candidate[c.from];
+      delete candidate[c.from];
+      change = "Column \"" + c.from + "\" renamed to \"" + c.to + "\"";
+    } else {
+      var raw = row.correction.trim();
+      var value = c.field === "labValue" && raw !== "" && !isNaN(Number(raw)) ? Number(raw) : raw;
+      candidate[c.field] = value;
+      change = c.field + " changed from \"" + displayValue(row.data[c.field]) + "\" to \"" + value + "\"";
+    }
+    return { candidate: candidate, change: change };
+  }
+
+  function signOff(row) {
+    if (!readyToSignOff(row) || isResolved(row)) return;
+    var now = new Date();
+    var note = row.resolutionNote.trim();
+    row.resolveError = "";
+
+    if (row.outcome === "correct") {
+      var fix = applyCorrection(row);
+      var result = validateRow(fix.candidate);
+      row.auditTrail.push({ title: "Correction submitted", actor: row.reviewer, detail: fix.change + ". Note: \"" + note + "\"", time: now });
+      if (result.issues.length > 0) {
+        row.resolveError = "The correction still fails: " + result.issues.map(function (i) { return i.detail; }).join("; ");
+        row.auditTrail.push({ title: "Revalidation failed — finding stays open", actor: "CliniCalm Intake Gate", detail: result.issues[0].code + ": " + result.issues[0].detail, time: new Date(now.getTime() + 1000) });
+        return;
+      }
+      row.data = fix.candidate;
+      row.notes = result.notes;
+      row.status = "corrected";
+      row.resolvedAt = new Date(now.getTime() + 1000);
+      row.auditTrail.push({ title: "Revalidated — passed, released", actor: "CliniCalm Intake Gate", detail: "All rules pass on the corrected record", time: row.resolvedAt });
+      return;
+    }
+
+    row.resolvedAt = now;
+    if (row.outcome === "confirm") {
+      row.status = "confirmed";
+      row.auditTrail.push({ title: "Confirmed as real — released", actor: row.reviewer, detail: "Original value kept on clinician sign-off. Note: \"" + note + "\"", time: now });
+    } else {
+      row.status = "rejected";
+      row.auditTrail.push({ title: "Rejected — not released", actor: row.reviewer, detail: "Record excluded from downstream analytics. Note: \"" + note + "\"", time: now });
+    }
+  }
+
+  // ---------------------------------------------------------------------
   // Rendering — finding modal (review, sign-off, audit trail)
   // ---------------------------------------------------------------------
+  function outcomeOption(value, title, desc, row, disabled) {
+    var checked = row.outcome === value ? " checked" : "";
+    return '<label class="outcome-option' + (disabled ? " disabled" : "") + '">' +
+      '<input type="radio" name="outcome" value="' + value + '"' + checked + (disabled ? " disabled" : "") + '>' +
+      '<span><strong>' + title + '</strong><span class="outcome-desc">' + desc + '</span></span>' +
+      '</label>';
+  }
+
   function renderModal() {
     var row = state.rows[modalState.openRowId];
     if (!row) return;
+    var issue = primaryIssue(row);
+    var closed = isResolved(row);
 
     document.getElementById("modalFindingId").textContent = "Finding ID: " + row.findingId;
-    document.getElementById("modalTitle").textContent = row.data.patientId + " — " + (row.issues && row.issues[0] ? row.issues[0].rule : "Finding");
+    document.getElementById("modalTitle").textContent = row.data.patientId + " — " + (issue ? issue.rule : "Finding");
 
+    var payload = { received: row.original };
+    if (row.status === "corrected") payload.released = row.data;
     var rawPayloadHtml =
       '<details class="raw-payload">' +
         '<summary>&#128196; Validation details &amp; raw ingest payload</summary>' +
-        '<pre class="mono">' + escapeHtml(JSON.stringify(row.data, null, 2)) + '</pre>' +
+        '<pre class="mono">' + escapeHtml(JSON.stringify(row.status === "corrected" ? payload : row.original, null, 2)) + '</pre>' +
       '</details>';
 
-    var isResolved = row.status === "resolved";
+    var statusLabel = { flagged: "Flagged", corrected: "Corrected", confirmed: "Confirmed", rejected: "Rejected" }[row.status] || "Flagged";
     var reviewerOptions = REVIEWERS.map(function (r) {
-      return '<option value="' + escapeHtml(r) + '"' + (row.reviewer === r ? " selected" : "") + '>' + escapeHtml(r) + '</option>';
+      var label = reviewerLabel(r);
+      return '<option value="' + escapeHtml(label) + '"' + (row.reviewer === label ? " selected" : "") + '>' + escapeHtml(label) + '</option>';
     }).join("");
+
+    var correction = correctionFor(row);
+    var correctionInput = "";
+    if (!closed && row.outcome === "correct" && correction) {
+      correctionInput = correction.kind === "remap"
+        ? '<div class="field-group"><span class="cell-muted">' + escapeHtml(correction.label) + '. CliniCalm will re-check the record before releasing it.</span></div>'
+        : '<div class="field-group">' +
+            '<label class="field-label" for="modalCorrection">' + escapeHtml(correction.label) + ' <span class="required-mark">*required</span></label>' +
+            '<input class="form-control" id="modalCorrection" placeholder="' + escapeHtml(correction.placeholder) + '" value="' + escapeHtml(row.correction) + '">' +
+          '</div>';
+    }
+
+    var confirmAllowed = canConfirm(row);
+    var confirmDesc = !issue || issue.rule !== "Implausible value"
+      ? "Only for out-of-range clinical values."
+      : (confirmAllowed ? "The value is unusual but real. Released as received." : "Only a clinician (PI or Site Physician) can confirm a clinical value.");
+
+    var outcomesHtml = closed ? "" :
+      '<div class="sample-row">' +
+        '<button type="button" class="btn btn-sm" id="modalSampleBtn">Fill sample answer</button>' +
+        '<span class="cell-muted">Sample values fill in for the demo. Edit them to try your own' + (issue && issue.field === "labValue" ? ', e.g. 40 to see a correction refused' : '') + '.</span>' +
+      '</div>' +
+      '<div class="field-group">' +
+        '<span class="field-label">Outcome <span class="required-mark">*required</span></span>' +
+        outcomeOption("correct", "Correct the value", "Fix it, then CliniCalm re-checks it before release.", row, false) +
+        outcomeOption("confirm", "Confirm it is real", confirmDesc, row, !confirmAllowed) +
+        outcomeOption("reject", "Reject the record", "Exclude it. It is never sent downstream.", row, false) +
+      '</div>' + correctionInput;
+
+    var errorHtml = row.resolveError ? '<div class="error-banner">' + escapeHtml(row.resolveError) + '</div>' : "";
 
     var reviewPanelHtml =
       '<div class="review-panel">' +
-        '<div class="review-panel-head"><h4>Review &amp; sign-off</h4><span class="cell-muted">Status: <strong>' + (isResolved ? "Resolved" : "Flagged") + '</strong></span></div>' +
+        '<div class="review-panel-head"><h4>Review &amp; sign-off</h4><span class="cell-muted">Status: <strong>' + statusLabel + '</strong></span></div>' +
         '<div class="field-group">' +
           '<label class="field-label" for="modalReviewer">Assigned reviewer</label>' +
-          '<select class="form-control" id="modalReviewer" ' + (isResolved ? "disabled" : "") + '>' +
+          '<select class="form-control" id="modalReviewer" ' + (closed ? "disabled" : "") + '>' +
             '<option value=""' + (row.reviewer ? "" : " selected") + ' disabled>Select a reviewer…</option>' +
             reviewerOptions +
           '</select>' +
         '</div>' +
+        outcomesHtml +
         '<div class="field-group">' +
           '<label class="field-label" for="modalNote">Resolution note <span class="required-mark">*required</span></label>' +
-          '<textarea class="form-control" id="modalNote" placeholder="What was wrong, and how was it fixed?" ' + (isResolved ? "disabled" : "") + '>' + escapeHtml(row.resolutionNote) + '</textarea>' +
+          '<textarea class="form-control" id="modalNote" placeholder="What was wrong, and how did you decide?" ' + (closed ? "disabled" : "") + '>' + escapeHtml(row.resolutionNote) + '</textarea>' +
         '</div>' +
+        errorHtml +
         '<div class="review-footer-row">' +
-          '<button class="btn ' + (isResolved ? "" : "btn-primary") + '" id="modalResolveBtn" ' + (isResolved || !row.reviewer || !row.resolutionNote.trim() ? "disabled" : "") + '>' +
-            (isResolved ? "&#10003; Resolved &amp; passed" : "Resolved &amp; passed") +
+          '<button class="btn ' + (closed ? "" : "btn-primary") + '" id="modalResolveBtn" ' + (closed || !readyToSignOff(row) ? "disabled" : "") + '>' +
+            (closed ? "&#10003; Signed off" : "Sign off") +
           '</button>' +
-          (isResolved ? '<span class="cell-muted mono">Resolved at ' + formatDateTime(row.resolvedAt) + '</span>' : '<span></span>') +
+          (closed ? '<span class="cell-muted mono">Closed at ' + formatDateTime(row.resolvedAt) + '</span>' : '<span></span>') +
         '</div>' +
       '</div>';
 
-    var successBannerHtml = isResolved ?
-      '<div class="success-banner">' +
-        '<strong>&#9989; Signed off — record passed</strong>' +
-        '<span class="pill">Released downstream</span>' +
-      '</div>' : "";
+    var bannerHtml = "";
+    if (isReleased(row)) {
+      bannerHtml = '<div class="success-banner"><strong>&#9989; ' + (row.status === "corrected" ? "Corrected, revalidated, and passed" : "Confirmed by a clinician") + '</strong><span class="pill">Released downstream</span></div>';
+    } else if (row.status === "rejected") {
+      bannerHtml = '<div class="reject-banner"><strong>&#9940; Rejected</strong><span class="pill">Not released</span></div>';
+    }
 
     var auditHtml = '<div class="audit-trail"><h4>Operational audit trail</h4>' +
       row.auditTrail.map(function (ev) {
@@ -1086,7 +1354,12 @@
       }).join("") +
     '</div>';
 
-    document.getElementById("modalBody").innerHTML = rawPayloadHtml + reviewPanelHtml + successBannerHtml + auditHtml;
+    document.getElementById("modalBody").innerHTML = rawPayloadHtml + reviewPanelHtml + bannerHtml + auditHtml;
+  }
+
+  function refreshSignOffButton(row) {
+    var btn = document.getElementById("modalResolveBtn");
+    if (btn) btn.disabled = !readyToSignOff(row);
   }
 
   function openModal(rowId) {
@@ -1141,46 +1414,57 @@
   document.getElementById("findingModal").addEventListener("click", function (e) {
     if (e.target.id === "findingModal") closeModal();
   });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && modalState.openRowId !== null) closeModal();
+  });
 
   document.getElementById("modalBody").addEventListener("change", function (e) {
-    if (e.target.id !== "modalReviewer") return;
     var row = state.rows[modalState.openRowId];
-    var val = e.target.value;
-    row.reviewer = val;
-    if (val && val !== row.lastLoggedReviewer) {
-      row.auditTrail.push({
-        title: "Assigned to " + val,
-        actor: "Clinical Data Operations Lead",
-        detail: "Quarantined record routed to " + val,
-        time: new Date()
-      });
-      row.lastLoggedReviewer = val;
+    if (!row) return;
+    if (e.target.id === "modalReviewer") {
+      var val = e.target.value;
+      row.reviewer = val;
+      if (val && val !== row.lastLoggedReviewer) {
+        row.auditTrail.push({
+          title: "Reassigned to " + val,
+          actor: "Clinical Data Operations Lead",
+          detail: "Quarantined record routed to " + val,
+          time: new Date()
+        });
+        row.lastLoggedReviewer = val;
+      }
+      if (row.outcome === "confirm" && !canConfirm(row)) row.outcome = "";
+      renderModal();
+      renderTable();
+    } else if (e.target.name === "outcome") {
+      row.outcome = e.target.value;
+      row.resolveError = "";
+      applySample(row, row.outcome);
+      renderModal();
     }
-    renderModal();
-    renderTable();
   });
 
   document.getElementById("modalBody").addEventListener("input", function (e) {
-    if (e.target.id !== "modalNote") return;
     var row = state.rows[modalState.openRowId];
-    row.resolutionNote = e.target.value;
-    var btn = document.getElementById("modalResolveBtn");
-    if (btn) btn.disabled = !row.reviewer || !row.resolutionNote.trim();
+    if (!row) return;
+    if (e.target.id === "modalNote") { row.resolutionNote = e.target.value; row.noteIsSample = false; }
+    else if (e.target.id === "modalCorrection") row.correction = e.target.value;
+    else return;
+    refreshSignOffButton(row);
   });
 
   document.getElementById("modalBody").addEventListener("click", function (e) {
+    if (e.target.id === "modalSampleBtn") {
+      var r = state.rows[modalState.openRowId];
+      r.outcome = "correct";
+      r.resolveError = "";
+      applySample(r, "correct");
+      renderModal();
+      return;
+    }
     if (e.target.id !== "modalResolveBtn") return;
     var row = state.rows[modalState.openRowId];
-    if (!row.reviewer || !row.resolutionNote.trim() || row.status === "resolved") return;
-    row.status = "resolved";
-    row.resolvedAt = new Date();
-    var noteText = row.resolutionNote && row.resolutionNote.trim() ? row.resolutionNote.trim() : "no note provided";
-    row.auditTrail.push({
-      title: "Resolution signed off — Passed",
-      actor: row.reviewer,
-      detail: "Signed off with note: \"" + noteText + "\"",
-      time: row.resolvedAt
-    });
+    signOff(row);
     renderModal();
     renderTable();
     renderStats();
